@@ -7,6 +7,7 @@ import (
     "strings"
     "path/filepath"
     "encoding/json"
+    "bufio"
 
     "github.com/helviojunior/randmap/internal/tools"
     "github.com/helviojunior/randmap/pkg/log"
@@ -122,7 +123,7 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
         if len(r.options.FilterList) > 0 {
             sqlHosts += r.prepareSQL([]string{"fqdn", "ptr"})
         }
-        rResults, err = conn.Model(&enumdns_models.Result{}).Preload(clause.Associations).Where("[exists] = 1 AND (ipv4 != '' or ipv6 != '') " + sqlHosts).Rows()
+        rResults, err = conn.Model(&enumdns_models.Result{}).Preload(clause.Associations).Where("[exists] = 1 AND (ipv4 != '') " + sqlHosts).Rows()
         if err != nil {
             return err
         }
@@ -149,6 +150,7 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
             isValid, isSaas := r.CheckHostEntry(ip, ptr, hostName)
             if isSaas {
                 hasIgnored = true
+                netcalc.AddSlice(&saasSubnetList, netcalc.NewSubnetFromIPMask(ip, 28))
                 log.Debug("Host ignored: identified as SaaS address.", "ip", ip)
             }
             if isValid {
@@ -205,6 +207,7 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
             isValid, isSaas := r.CheckHostEntry(ip, host.Ptr)
             if isSaas {
                 hasIgnored = true
+                netcalc.AddSlice(&saasSubnetList, netcalc.NewSubnetFromIPMask(ip, 28))
                 log.Debug("Host ignored: identified as SaaS address.", "ip", ip)
             }
             if isValid {
@@ -264,6 +267,7 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
                         isValid, isSaas := r.CheckHostEntry(ip, ptr)
                         if isSaas {
                             hasIgnored = true
+                            netcalc.AddSlice(&saasSubnetList, netcalc.NewSubnetFromIPMask(ip, 28))
                             log.Debug("Host ignored: identified as SaaS address.", "ip", ip)
                         }
                         if isValid {
@@ -275,6 +279,62 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
             }
         }
         log.Infof("Processed %d hosts", regCount)
+    }
+
+    for _, txt := range r.textFiles {
+        log.Info("Reading TXT file", "file", txt)
+        regCount := 0
+
+        file, err := os.Open(txt)
+        if err != nil {
+            return err
+        }
+        defer file.Close()
+
+        scanner := bufio.NewScanner(file)
+        for scanner.Scan() {
+            line := scanner.Text()
+            if line == "" {
+                continue
+            }
+
+            subnets, err := tools.ExtractAllSubnets(line)
+            if err != nil {
+                return err
+            }
+
+            if len(subnets) > 0 {
+                for _, subnet := range subnets {
+                    m, _ := subnet.Mask.Size()
+                    if m > r.options.MinSubnet {
+                        m = r.options.MinSubnet
+                    }
+                    add := true
+                    for _, netIp := range saasSubnetList {
+                         _, saas, err := net.ParseCIDR(fmt.Sprintf("%s/%d", netIp.Net, netIp.Mask))
+                        if err != nil {
+                            log.Debug("Error parsing network ip", "err", err)
+                        }
+
+                        if err == nil {
+                            if !saas.Contains(subnet.IP) {
+                                hasIgnored = true
+                                add = false
+                                continue
+                            }
+                        }
+                    }
+                    if add {
+                        netcalc.AddSlice(&subnetList, netcalc.NewSubnetFromIPMask(subnet.IP, m))
+                        regCount++
+                    }
+                }
+            }
+        }
+
+        if err := scanner.Err(); err != nil {
+            return err
+        }
     }
 
     saasSubnetList2 := []net.IPNet{}

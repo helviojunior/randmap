@@ -20,6 +20,75 @@ type LabeledIP struct {
     Subnet string
 }
 
+func ExtractAllSubnets(text string) ([]*net.IPNet, error) {
+	ipList := []*net.IPNet{}
+
+    netRe1 := regexp.MustCompile("\\b([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})\\/(3[0-2]|[12][0-9]|[1-9])\\b")
+    netRe2 := regexp.MustCompile("\\b([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})\\/(255\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})\\b")
+    ipRe := regexp.MustCompile("\\b([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})\\b")
+
+    // Check if is an CIDR Subnet (xxx.xxx.xxx.xxx/xx)
+    mlNet1 := netRe1.FindAllStringSubmatch(text, -1)
+    for _, mNet1 := range mlNet1 {
+	    if len(mNet1) > 0 {
+	        _, subnet, err := net.ParseCIDR(mNet1[0])
+	        if err != nil {
+	            return nil, errors.New("Invalid subnet: " + err.Error())
+	        }
+	        ipList = append(ipList, subnet)
+	    }
+	}
+
+    // Check if is an Netmask Subnet (xxx.xxx.xxx.xxx/255.xxx.xxx.xxx)
+    mlNet2 := netRe2.FindAllStringSubmatch(text, -1)
+    for _, mNet2 := range mlNet2 {
+	    if len(mNet2) > 0 {
+	        ip := net.ParseIP(mNet2[1])
+	        if ip == nil {
+	            return nil, errors.New(fmt.Sprintf("Invalid subnet ip (%s)", mNet2[0]))
+	        }
+	        mask := net.IPMask(net.ParseIP(mNet2[2]).To4())
+	        if mask == nil {
+	            return nil, errors.New(fmt.Sprintf("Invalid subnet mask (%s)", mNet2[0]))
+	        }
+	        ones, _ := mask.Size()
+
+	        cidr := fmt.Sprintf("%s/%d", ip.String(), ones)
+
+	        _, subnet, err := net.ParseCIDR(cidr)
+	        if err != nil {
+	            return nil, errors.New("Invalid subnet: " + err.Error())
+	        }
+	        ipList = append(ipList, subnet)
+	    }
+	}
+
+    // Check if is an IP addr
+    mlIpRe := ipRe.FindAllStringSubmatch(text, -1)
+    for _, mIp := range mlIpRe {
+	    if len(mIp) > 0 {
+	        ip := net.ParseIP(mIp[0])
+	        if ip == nil {
+	            return nil, errors.New(fmt.Sprintf("Invalid ip address (%s)", mIp[0]))
+	        }
+	        _, subnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ip, 32))
+	        if err != nil {
+	            return nil, errors.New(fmt.Sprintf("Invalid ip address (%s): %s", mIp[0], err.Error()))
+	        }
+	        add := true
+	        for _, netIp := range ipList {
+	        	if netIp.Contains(ip) {
+	        		add = false
+	        	}
+	        }
+	        if add {
+		        ipList = append(ipList, subnet)
+		    }
+	    }
+	}
+
+    return ipList, nil
+}
 
 func IpToUint32(ip net.IP) uint32 {
     ip = ip.To4()

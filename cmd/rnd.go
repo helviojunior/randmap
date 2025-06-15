@@ -275,7 +275,7 @@ A --from-path and --to-path must be specified.`)),
 
         for _, fp := range convertCmdFlags.fromPaths {
             if fp.Type == "file" {
-                log.Debug("Adding database file", "path", fp.Path)
+                log.Debug("Adding source file", "path", fp.Path)
                 reader.AddDatabase(fp.Path)
             }else {
 
@@ -291,7 +291,7 @@ A --from-path and --to-path must be specified.`)),
                     fileRelativePath, _ := resolver.ResolveRelativePath(fp.Path, filepath.Join(fp.Path, e.Name()))
                     fileExt := strings.ToLower(filepath.Ext(e.Name()))
                     if tools.SliceHasStr(conversionCmdExtensions, fileExt) {
-                        log.Debug("Adding database file", "path", fileRelativePath)
+                        log.Debug("Adding source file", "path", fileRelativePath)
                         reader.AddDatabase(fileFullPath)
                     }else{
                         log.Debug("Ignoring file", "path", fileRelativePath)
