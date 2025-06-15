@@ -1,0 +1,39 @@
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+*.sqlite
+*.sqlite3
+*.db
+*.jsonl
+*.txt
+*.xml
+*.dot
+randmap
+randmap.exe
+# dep vendor/
+vendor/
+
+# build artifacts
+build/
+
+# screenshots dir
+screenshots/
+
+# Test binary, build with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
+.glide/
+.DS_Store
+.idea/
+
+# Output path
+randmap_out*
+
+# Permmit images
+!images/
