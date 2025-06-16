@@ -21,7 +21,7 @@ var workspacePath string
 var opts = &readers.Options{}
 var rootCmd = &cobra.Command{
 	Use:   "randmap",
-	Short: "randmap is a modular chart generator",
+	Short: "Randomized ip & port feed for scans",
 	Long:  ascii.Logo(),
 	Example: `
 - randmap report dot --from-path ~/client_data/ --to-file randmap.dot

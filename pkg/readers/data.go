@@ -335,6 +335,8 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
         if err := scanner.Err(); err != nil {
             return err
         }
+        
+        log.Infof("Processed %d hosts", regCount)
     }
 
     saasSubnetList2 := []net.IPNet{}
