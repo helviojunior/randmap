@@ -165,6 +165,7 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
     for _, c := range r.certcrawlerFiles {
         log.Info("Reading CertCrawler file", "file", c)
         regCount := 0
+        newRegCount := 0
         conn, err := database.Connection(fmt.Sprintf("sqlite:///%s", c), true, false)
         if err != nil {
             return err
@@ -195,6 +196,7 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
         for rHosts.Next() {
 
             conn.ScanRows(rHosts, &host)
+            regCount++
 
             ip := net.ParseIP(host.Ip)
             if ip == nil {
@@ -209,21 +211,23 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
                 log.Debug("Host ignored: identified as SaaS address.", "ip", ip)
             }
             if isValid {
-                regCount++
+                newRegCount++
                 netcalc.AddSlice(&subnetList, netcalc.NewSubnetFromIPMask(ip, r.options.MinSubnet))
             }
 
         }
     
-        log.Infof("Processed %d hosts", regCount)
+        log.Infof("Processed %d hosts with %d new items", regCount, newRegCount)
     }
 
     for _, nmap := range r.nmapFiles {
         log.Info("Reading NMAP file", "file", nmap)
         regCount := 0
+        newRegCount := 0
         nmapXML, err := r.getNmapXML(nmap)
         if err == nil {
             for _, host := range nmapXML.Hosts {
+                regCount++
 
                 ptr := ""
                 for _, hostName := range host.Hostnames {
@@ -269,19 +273,20 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
                             log.Debug("Host ignored: identified as SaaS address.", "ip", ip)
                         }
                         if isValid {
-                            regCount++
+                            newRegCount++
                             netcalc.AddSlice(&subnetList, netcalc.NewSubnetFromIPMask(ip, r.options.MinSubnet))
                         }
                     }
                 }
             }
         }
-        log.Infof("Processed %d hosts", regCount)
+        log.Infof("Processed %d hosts with %d new items", regCount, newRegCount)
     }
 
     for _, txt := range r.textFiles {
         log.Info("Reading TXT file", "file", txt)
         regCount := 0
+        newRegCount := 0
 
         file, err := os.Open(txt)
         if err != nil {
@@ -303,6 +308,8 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
 
             if len(subnets) > 0 {
                 for _, subnet := range subnets {
+                    regCount++
+
                     add := true
                     m, _ := subnet.Mask.Size()
 
@@ -337,8 +344,8 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
                         }
                     }
                     if add {
+                        newRegCount++
                         netcalc.AddSlice(&subnetList, netcalc.NewSubnetFromIPMask(subnet.IP, m))
-                        regCount++
                     }
                 }
             }
@@ -348,7 +355,7 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
             return err
         }
         
-        log.Infof("Processed %d hosts", regCount)
+        log.Infof("Processed %d hosts with %d new items", regCount, newRegCount)
     }
 
     saasSubnetList2 := []net.IPNet{}
