@@ -142,8 +142,6 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
 
             regCount++
 
-            netcalc.AddSlice(&subnetList, netcalc.NewSubnetFromIPMask(ip, r.options.MinSubnet))
-
             ptr := strings.Trim(resultItem.Ptr, ".")
             hostName := strings.Trim(resultItem.FQDN, ".")
 
@@ -305,22 +303,36 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
 
             if len(subnets) > 0 {
                 for _, subnet := range subnets {
+                    add := true
                     m, _ := subnet.Mask.Size()
+
+                    if m == 32 {
+                        isValid, isSaas := r.CheckHostEntry(subnet.IP, "")
+                        if isSaas {
+                            hasIgnored = true
+                            netcalc.AddSlice(&saasSubnetList, netcalc.NewSubnetFromIPMask(subnet.IP, 28))
+                            log.Debug("Host ignored: identified as SaaS address.", "ip", subnet.IP)
+                        }
+                        add = isValid
+                    }
+
                     if m > r.options.MinSubnet {
                         m = r.options.MinSubnet
                     }
-                    add := true
-                    for _, netIp := range saasSubnetList {
-                         _, saas, err := net.ParseCIDR(fmt.Sprintf("%s/%d", netIp.Net, netIp.Mask))
-                        if err != nil {
-                            log.Debug("Error parsing network ip", "err", err)
-                        }
+                    
+                    if add {
+                        for _, netIp := range saasSubnetList {
+                             _, saas, err := net.ParseCIDR(fmt.Sprintf("%s/%d", netIp.Net, netIp.Mask))
+                            if err != nil {
+                                log.Debug("Error parsing network ip", "err", err)
+                            }
 
-                        if err == nil {
-                            if !saas.Contains(subnet.IP) {
-                                hasIgnored = true
-                                add = false
-                                continue
+                            if err == nil {
+                                if !saas.Contains(subnet.IP) {
+                                    hasIgnored = true
+                                    add = false
+                                    continue
+                                }
                             }
                         }
                     }
@@ -396,7 +408,23 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
             log.Errorf("Error expanding subnet: %s", err.Error())
             continue
         }
-        allLabeled = append(allLabeled, ips...)
+
+        if len(r.options.ExcludeFilterList) > 0 {
+            for _, ip := range ips {
+                add := true
+                for _, f := range r.options.ExcludeFilterList {
+                    if f.Contains(ip.IP) {
+                        add = false
+                    }
+                }
+                if add {
+                    allLabeled = append(allLabeled, ip)
+                }
+            }
+        }else{
+            allLabeled = append(allLabeled, ips...)
+        }
+    
     }
 
     if len(allLabeled) == 0 {
@@ -533,6 +561,7 @@ func (r *DataReader) CheckHostEntry(ip net.IP, hostNames ...interface{}) (bool, 
         for _, f := range r.options.ExcludeFilterList {
             if f.Contains(ip) {
                 add = false
+                log.Debug("IP denied by exclude filter", "ip", ip)
             }
         }
     }

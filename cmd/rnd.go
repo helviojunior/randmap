@@ -79,18 +79,39 @@ A --from-path and --to-path must be specified.`)),
 
         re := regexp.MustCompile("[^a-zA-Z0-9@-_.]")
         for _, s1 := range tmpIncludeFilter {
+            incLines := []string{}
 
-            subnet, err := ExtractSubnet(s1)
-            if err != nil {
-                return err
-            }
-            if subnet != nil {
-                opts.IncludeFilterList = append(opts.IncludeFilterList, *subnet)
-            }else{
-                s2 := strings.ToLower(strings.Trim(s1, " "))
-                s2 = re.ReplaceAllString(s2, "")
-                if s2 != "" {
-                    opts.FilterList = append(opts.FilterList, s2)
+            s1 = strings.Trim(s1, " ")
+            if len(s1) > 1 {
+                if s1[0:1] == "@" {
+
+                    f1, err := resolver.ResolveFullPath(s1[1:])
+                    if err != nil {
+                        return errors.New(fmt.Sprintf("Invalid file path (%s): %s", s1[1:], err.Error()))
+                    }
+                    if !tools.FileExists(f1) {
+                        return errors.New(fmt.Sprintf("Invalid file path (%s): %s", s1[1:], "File not found"))
+                    }
+
+                    readers.ReadAllLines(f1, &incLines)
+
+                }else{
+                    incLines = append(incLines, s1)
+                }
+                for _, s2 := range incLines {
+                    subnet, err := ExtractSubnet(s2)
+                    if err != nil {
+                        return err
+                    }
+                    if subnet != nil {
+                        opts.IncludeFilterList = append(opts.IncludeFilterList, *subnet)
+                    }else{
+                        s3 := strings.ToLower(strings.Trim(s2, " "))
+                        s3 = re.ReplaceAllString(s2, "")
+                        if s3 != "" {
+                            opts.FilterList = append(opts.FilterList, s3)
+                        }
+                    }
                 }
             }
         }
@@ -101,14 +122,42 @@ A --from-path and --to-path must be specified.`)),
         })
 
         for _, s1 := range tmpExcludeFilter {
+            incLines := []string{}
 
-            subnet, err := ExtractSubnet(s1)
-            if err != nil {
-                return err
+            s1 = strings.Trim(s1, " ")
+            if len(s1) > 1 {
+                if s1[0:1] == "@" {
+
+                    f1, err := resolver.ResolveFullPath(s1[1:])
+                    if err != nil {
+                        return errors.New(fmt.Sprintf("Invalid file path (%s): %s", s1[1:], err.Error()))
+                    }
+                    if !tools.FileExists(f1) {
+                        return errors.New(fmt.Sprintf("Invalid file path (%s): %s", s1[1:], "File not found"))
+                    }
+
+                    readers.ReadAllLines(f1, &incLines)
+
+                }else{
+                    incLines = append(incLines, s1)
+                }
+                for _, s2 := range incLines {
+                    subnet, err := ExtractSubnet(s2)
+                    if err != nil {
+                        return err
+                    }
+                    if subnet != nil {
+                        opts.ExcludeFilterList = append(opts.ExcludeFilterList, *subnet)
+                    }
+                }
             }
-            opts.ExcludeFilterList = append(opts.ExcludeFilterList, *subnet)
         }
+
         // Sort subnets by IP
+        sort.Slice(opts.IncludeFilterList, func(i, j int) bool {
+            return tools.SubnetToUint32(opts.IncludeFilterList[i]) < tools.SubnetToUint32(opts.IncludeFilterList[j])
+        })
+
         sort.Slice(opts.ExcludeFilterList, func(i, j int) bool {
             return tools.SubnetToUint32(opts.ExcludeFilterList[i]) < tools.SubnetToUint32(opts.ExcludeFilterList[j])
         })
@@ -379,9 +428,9 @@ func ExtractSubnet(text string) (*net.IPNet, error) {
 func init() {
     rootCmd.AddCommand(reportCmd)
 
-    reportCmd.PersistentFlags().StringSliceVar(&tmpExcludeFilter, "exclude", []string{}, "Exclude all IP or Network. You can specify multiple values by comma-separated terms or by repeating the flag.")
+    reportCmd.PersistentFlags().StringSliceVar(&tmpExcludeFilter, "exclude", []string{}, "Exclude all IP or Network. You can specify multiple values by comma-separated terms or by repeating the flag. Use @filename to load from text file.")
     
-    reportCmd.PersistentFlags().StringSliceVar(&tmpIncludeFilter, "include", []string{}, "Include only IP or Network. You can specify multiple values by comma-separated terms or by repeating the flag.")
+    reportCmd.PersistentFlags().StringSliceVar(&tmpIncludeFilter, "include", []string{}, "Include only IP or Network. You can specify multiple values by comma-separated terms or by repeating the flag. Use @filename to load from text file.")
     
     reportCmd.PersistentFlags().StringSliceVarP(&tmpFromPaths, "from-path", "I", []string{}, "The file(s) or directory(ies) to convert from. You can specify multiple values by repeating the flag.")
 
