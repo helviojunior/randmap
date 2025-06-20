@@ -117,9 +117,13 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
         var rResults *sql.Rows
 
         sqlHosts := ""
+
+        /*
+        NOTE: DO NOT Filter here! We need this information to filter out the same /24 subnet
         if !r.options.IncludeSaas {
             sqlHosts += " AND (saas_product = '' or saas_product is null)"
         }
+        */
         if len(r.options.FilterList) > 0 {
             sqlHosts += r.prepareSQL([]string{"fqdn", "ptr"})
         }
@@ -148,7 +152,7 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
             isValid, isSaas := r.CheckHostEntry(ip, ptr, hostName)
             if isSaas {
                 hasIgnored = true
-                netcalc.AddSlice(&saasSubnetList, netcalc.NewSubnetFromIPMask(ip, 28))
+                netcalc.AddSlice(&saasSubnetList, netcalc.NewSubnetFromIPMask(ip, 24))
                 log.Debug("Host ignored: identified as SaaS address.", "ip", ip)
             }
             if isValid {
@@ -207,7 +211,7 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
             isValid, isSaas := r.CheckHostEntry(ip, host.Ptr)
             if isSaas {
                 hasIgnored = true
-                netcalc.AddSlice(&saasSubnetList, netcalc.NewSubnetFromIPMask(ip, 28))
+                netcalc.AddSlice(&saasSubnetList, netcalc.NewSubnetFromIPMask(ip, 24))
                 log.Debug("Host ignored: identified as SaaS address.", "ip", ip)
             }
             if isValid {
@@ -269,7 +273,7 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
                         isValid, isSaas := r.CheckHostEntry(ip, ptr)
                         if isSaas {
                             hasIgnored = true
-                            netcalc.AddSlice(&saasSubnetList, netcalc.NewSubnetFromIPMask(ip, 28))
+                            netcalc.AddSlice(&saasSubnetList, netcalc.NewSubnetFromIPMask(ip, 24))
                             log.Debug("Host ignored: identified as SaaS address.", "ip", ip)
                         }
                         if isValid {
@@ -317,7 +321,7 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
                         isValid, isSaas := r.CheckHostEntry(subnet.IP, "")
                         if isSaas {
                             hasIgnored = true
-                            netcalc.AddSlice(&saasSubnetList, netcalc.NewSubnetFromIPMask(subnet.IP, 28))
+                            netcalc.AddSlice(&saasSubnetList, netcalc.NewSubnetFromIPMask(subnet.IP, 24))
                             log.Debug("Host ignored: identified as SaaS address.", "ip", subnet.IP)
                         }
                         add = isValid
@@ -416,22 +420,37 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
             continue
         }
 
-        if len(r.options.ExcludeFilterList) > 0 {
-            for _, ip := range ips {
-                add := true
+        for _, ip := range ips {
+            add := true
+            if len(r.options.ExcludeFilterList) > 0 {
                 for _, f := range r.options.ExcludeFilterList {
                     if f.Contains(ip.IP) {
                         add = false
                     }
                 }
-                if add {
-                    allLabeled = append(allLabeled, ip)
+            }
+            if add {
+                if len(saasSubnetList) > 0 {
+                    for _, netIp := range saasSubnetList {
+                        _, saas, err := net.ParseCIDR(fmt.Sprintf("%s/%d", netIp.Net, netIp.Mask))
+                        if err != nil {
+                            log.Debug("Error parsing network ip", "err", err)
+                        }
+
+                        if err == nil {
+                            if saas.Contains(ip.IP) {
+                                hasIgnored = true
+                                add = false
+                            }
+                        }
+                    }
                 }
             }
-        }else{
-            allLabeled = append(allLabeled, ips...)
+
+            if add {
+                allLabeled = append(allLabeled, ip)
+            }
         }
-    
     }
 
     if len(allLabeled) == 0 {
