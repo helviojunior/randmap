@@ -420,6 +420,7 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
             continue
         }
 
+        log.Debugf("Subnet %s expanded in %d ip addresses", cidr, len(ips))
         for _, ip := range ips {
             add := true
             if len(r.options.ExcludeFilterList) > 0 {
@@ -457,6 +458,7 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
         return models.NoDataError{Message:"No items available to generate files."}
     }
 
+    log.Debug("Addresses", "count", len(allLabeled))
     tools.ShuffleLabeledIPs(allLabeled)
 
     scanGroups := r.GroupIPsAcrossSubnets(allLabeled)

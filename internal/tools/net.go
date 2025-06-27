@@ -162,6 +162,16 @@ func SubnetHosts(cidr string) ([]net.IP, error) {
 	return ips, nil
 }
 
+
+func IpTo24Net(ip net.IP) *net.IPNet {
+	if ip.To4() == nil {
+		return nil // Not an IPv4 address
+	}
+	mask := net.CIDRMask(24, 32)
+	network := ip.Mask(mask)
+	return &net.IPNet{IP: network, Mask: mask}
+}
+
 // Expand CIDR into usable IPs and return with its subnet label
 func ExpandCIDR(cidr string) ([]LabeledIP, error) {
 	ip, ipnet, err := net.ParseCIDR(cidr)
@@ -172,13 +182,19 @@ func ExpandCIDR(cidr string) ([]LabeledIP, error) {
 	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); incIP(ip) {
 		ipCopy := make(net.IP, len(ip))
 		copy(ipCopy, ip)
-		result = append(result, LabeledIP{IP: ipCopy, Subnet: ipnet.String()})
+		ones, _ := ipnet.Mask.Size()
+		if ones >= 24 {
+			result = append(result, LabeledIP{IP: ipCopy, Subnet: ipnet.String()})
+		}else{
+			result = append(result, LabeledIP{IP: ipCopy, Subnet: IpTo24Net(ip).String()})
+		}
 	}
 
 	// Remove network/broadcast for IPv4
+	/*
 	if len(result) > 2 && ip.To4() != nil {
 		return result[1 : len(result)-1], nil
-	}
+	}*/
 	return result, nil
 }
 
