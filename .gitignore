@@ -12,6 +12,10 @@
 *.dot
 randmap
 randmap.exe
+*.version
+*.verstr
+*.ldflags
+
 # dep vendor/
 vendor/
 
