@@ -448,4 +448,6 @@ func init() {
 
     reportCmd.PersistentFlags().BoolVarP(&opts.IncludeSaas, "full", "F", false, "Include SaaS addresses to scan list")
     reportCmd.PersistentFlags().BoolVar(&disablePortRatio, "disable-port-ratio", false, "Disables sorting by port ratio when using --top-ports. Ports will be selected in linear order instead.")
+
+    reportCmd.PersistentFlags().BoolVarP(&opts.Append, "append", "A", false, "Append to an existing list")
 }

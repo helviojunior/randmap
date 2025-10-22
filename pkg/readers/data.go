@@ -8,6 +8,7 @@ import (
     "path/filepath"
     "encoding/json"
     "bufio"
+    "io"
 
     "github.com/helviojunior/randmap/internal/tools"
     "github.com/helviojunior/randmap/pkg/log"
@@ -464,7 +465,31 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
     scanGroups := r.GroupIPsAcrossSubnets(allLabeled)
 
     scans := []models.ScanMap{}
-    idx := 1
+
+    if (r.options.Append) {
+        log.Info("Getting previous scan data")
+
+        file, err := os.Open(filepath.Join(outputPath, "scan_0000_list.json"))
+        if err != nil {
+            log.Error("could not open file scan_0000_list.json", "err", err)
+        }else{
+            defer file.Close()
+
+            fileData, err := io.ReadAll(file)
+            if err != nil {
+                log.Error("could not read file scan_0000_list.json", "err", err)
+            }else{
+                if err := json.Unmarshal(fileData, &scans); err != nil {
+                    log.Error("could not unmarshal JSON file scan_0000_list.json", "err", err)
+                    scans = []models.ScanMap{}
+                }
+            }
+        }
+        log.Infof("Read \033[33m%d\033[0m distinct scans.", len(scans))
+
+    }
+
+    idx := len(scans) + 1
     for _, group := range scanGroups {
         for _, svc := range serviceSplitList {
             filePrefix := fmt.Sprintf("scan_%04d", idx)

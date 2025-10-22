@@ -31,6 +31,8 @@ type Options struct {
     IncludeSaas bool
 
     MinSubnet int
+
+    Append bool
 }
 
 // Logging is log related options
@@ -56,5 +58,6 @@ func NewDefaultOptions() *Options {
         IncludeFilterList: []net.IPNet{},
         StoreTempInWorkspace: false,
         Services: []models.Service{},
+        Append: false,
     }
 }
