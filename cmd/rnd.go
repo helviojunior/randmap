@@ -48,9 +48,9 @@ Randomized ip & port feed for scans.
 
 A --from-path and --to-path must be specified.`)),
     Example: `
-- randmap report dot --from-path ~/client_data/ --top-ports 100
-- randmap report dot --from-path ~/client_data/ -p 80,443,445,3389
-- randmap report dot --from-path ~/client_data/enumdns.sqlite3 --to-path ~/Desktop/ --top-ports 100
+- randmap rnd --from-path ~/client_data/ --top-ports 100
+- randmap rnd --from-path ~/client_data/ -p 80,443,445,3389
+- randmap rnd --from-path ~/client_data/enumdns.sqlite3 --to-path ~/Desktop/ --top-ports 100
 `,
     PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
         var err error
