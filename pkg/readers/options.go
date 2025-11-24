@@ -32,7 +32,11 @@ type Options struct {
 
     MinSubnet int
 
+    MaxSubnet int
+
     Append bool
+
+    NoSupernet bool
 }
 
 // Logging is log related options
@@ -59,5 +63,6 @@ func NewDefaultOptions() *Options {
         StoreTempInWorkspace: false,
         Services: []models.Service{},
         Append: false,
+        NoSupernet: false,
     }
 }

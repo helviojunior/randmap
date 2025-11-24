@@ -9,6 +9,8 @@ import (
     "encoding/json"
     "bufio"
     "io"
+    "sort"
+    "encoding/binary"
 
     "github.com/helviojunior/randmap/internal/tools"
     "github.com/helviojunior/randmap/pkg/log"
@@ -330,8 +332,10 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
 
                     if m > r.options.MinSubnet {
                         m = r.options.MinSubnet
+                    }else if m < r.options.MaxSubnet {
+                        m = r.options.MaxSubnet
                     }
-                    
+
                     if add {
                         for _, netIp := range saasSubnetList {
                              _, saas, err := net.ParseCIDR(fmt.Sprintf("%s/%d", netIp.Net, netIp.Mask))
@@ -373,6 +377,10 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
         saasSubnetList2 = append(saasSubnetList2, *subnet)
     }
 
+    sort.Slice(subnetList, func(i, j int) bool {
+        return binary.BigEndian.Uint32(subnetList[i].To4()) < binary.BigEndian.Uint32(subnetList[j].To4())
+    })
+
     subnetList2 := []string{}
     for _, subnet := range subnetList {
         n := fmt.Sprintf("%s/%d", subnet.Net, subnet.Mask)
@@ -381,9 +389,25 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
         }
     }
 
-    log.Info("Calculating supernets...")
     supnetList2 := []string{}
+
+    log.Info("Calculating supernets...")
+    
     netGroups := netcalc.GroupSubnets(subnetList2)
+    if (r.options.NoSupernet) {
+        netGroups = [][]net.IPNet{}
+        for _, cidr := range subnetList2 {
+            _, ipnet, err := net.ParseCIDR(cidr)
+            if err != nil {
+                fmt.Println("Erro CIDR:", cidr)
+                continue
+            }
+            
+            netGroups = append(netGroups, []net.IPNet{*ipnet})
+
+        }
+        
+    }
     for i, group := range netGroups {
         supnet := netcalc.CalculateSupernet(group)
         n := supnet.String()
@@ -392,6 +416,7 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
             log.Infof("Supernet %04d: %s (from %d ips)", i+1, n, len(group))
         }
     }
+
 
     serviceSplitList := []([]models.Service){}
     tmpServices := []models.Service{}
@@ -628,6 +653,10 @@ func (r *DataReader) CheckHostEntry(ip net.IP, hostNames ...interface{}) (bool, 
             if hn, ok := v.(string); ok {
                 if hn != "" {
                     if ss, _, _ := enumdns_run.ContainsSaaS(hn); ss {
+                       hasSaas = true
+                       continue
+                    }
+                    if ss, _, _ := enumdns_run.ContainsCloudProduct(hn); ss {
                        hasSaas = true
                        continue
                     }
