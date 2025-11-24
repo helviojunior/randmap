@@ -73,6 +73,10 @@ A --from-path and --to-path must be specified.`)),
             return errors.New("--min-cidr-mask must be a valid CIDR value between 8 and 32")
         }
 
+        if opts.MaxSubnet < 8 || opts.MaxSubnet > 32 {
+            return errors.New("--max-cidr-mask must be a valid CIDR value between 8 and 32")
+        }
+
         if opts.PortsPerScan < 5 {
             return errors.New("--ports-per-host must be greater or equal of 5")
         }
@@ -443,6 +447,7 @@ func init() {
     reportCmd.PersistentFlags().IntVarP(&opts.HostsPerScan, "hosts-per-scan", "H", 64, "Host count per scan instance")
     reportCmd.PersistentFlags().IntVarP(&opts.PortsPerScan, "ports-per-host", "P", 128, "Number of ports scanned per host")
     reportCmd.PersistentFlags().IntVarP(&opts.MinSubnet, "min-cidr-mask", "m", 27, "Defines the minimum subnet size (CIDR) to consider when expanding target hosts. Use /32 to treat each host individually, or a broader subnet like /27 to include nearby hosts.")
+    reportCmd.PersistentFlags().IntVarP(&opts.MaxSubnet, "max-cidr-mask", "M", 25, "Defines the maximum subnet size (CIDR) to consider. Use /32 to treat each host individually, or a broader subnet like /27 to include nearby hosts.")
 
     reportCmd.PersistentFlags().StringSliceVarP(&tmpProto, "scan-protocol", "s", []string{"tcp"}, "Protocol to scan (TCP or UDP). You can specify multiple values by comma-separated terms or by repeating the flag.")
 
@@ -450,4 +455,7 @@ func init() {
     reportCmd.PersistentFlags().BoolVar(&disablePortRatio, "disable-port-ratio", false, "Disables sorting by port ratio when using --top-ports. Ports will be selected in linear order instead.")
 
     reportCmd.PersistentFlags().BoolVarP(&opts.Append, "append", "A", false, "Append to an existing list")
+    reportCmd.PersistentFlags().BoolVar(&opts.NoSupernet, "no-supernet", false, "Disable supernet calc")
+
+    
 }
