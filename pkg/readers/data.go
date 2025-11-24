@@ -393,6 +393,8 @@ func (r *DataReader) GenerateScanFiles(outputPath string) error {
 
     log.Info("Calculating supernets...")
     
+    netcalc.SetLowerCIDR(uint32(r.options.MaxSubnet))
+
     netGroups := netcalc.GroupSubnets(subnetList2)
     if (r.options.NoSupernet) {
         netGroups = [][]net.IPNet{}
