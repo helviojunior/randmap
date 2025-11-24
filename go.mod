@@ -10,7 +10,7 @@ require (
 	github.com/helviojunior/certcrawler v0.1.18
 	github.com/helviojunior/enumdns v0.1.21
 	github.com/helviojunior/gopathresolver v0.1.6
-	github.com/helviojunior/pcapraptor v0.1.6
+	github.com/helviojunior/pcapraptor v0.1.7
 	github.com/lair-framework/go-nmap v0.0.0-20191202052157-3507e0b03523
 	github.com/prometheus/procfs v0.17.0
 	github.com/spf13/cobra v1.10.1

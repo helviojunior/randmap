@@ -71,8 +71,8 @@ github.com/helviojunior/enumdns v0.1.21 h1:JN54T2bpEF68WA4ADUNgIambtord54PrrCM2z
 github.com/helviojunior/enumdns v0.1.21/go.mod h1:VKH834rEfcBaGkDbm75UypXANH99NvMCIfDF/arunNM=
 github.com/helviojunior/gopathresolver v0.1.6 h1:TqyOiEB+L1TTY7z+zVA09F+2JtJ/7gFiE5gSGsaamGY=
 github.com/helviojunior/gopathresolver v0.1.6/go.mod h1:19ixd6gL/i7Md6lyoM4mPGgZZ3/xQsEHVqn3dhreads=
-github.com/helviojunior/pcapraptor v0.1.6 h1:c68RkPY86oNEkat/Subn0aL6EjbT4h0BE9xkB8xHX5c=
-github.com/helviojunior/pcapraptor v0.1.6/go.mod h1:sNiMF7058MXmk+sLtrqYOqrPKIsvh4LSp/2eeArx24E=
+github.com/helviojunior/pcapraptor v0.1.7 h1:IibYdBT6g/jMAc4h/Dt5RI+JVAdvaXqF3sCvXBZeQfM=
+github.com/helviojunior/pcapraptor v0.1.7/go.mod h1:sNiMF7058MXmk+sLtrqYOqrPKIsvh4LSp/2eeArx24E=
 github.com/hexops/gotextdiff v1.0.3 h1:gitA9+qJrrTCsiCl7+kh75nPqQt1cx4ZkudSTLoUqJM=
 github.com/hexops/gotextdiff v1.0.3/go.mod h1:pSWU5MAI3yDq+fZBTazCSJysOMbxWL1BSow5/V2vxeg=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
