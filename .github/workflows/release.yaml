@@ -47,6 +47,10 @@ jobs:
         run: |
           python3 update_nmap_services.py
 
+      - name: Update go.sum
+        run: |
+          go mod tidy
+
       - uses: wangyoucao577/go-release-action@v1.33
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
