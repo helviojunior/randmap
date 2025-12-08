@@ -13,7 +13,7 @@ require (
 	github.com/helviojunior/pcapraptor v0.1.8
 	github.com/lair-framework/go-nmap v0.0.0-20191202052157-3507e0b03523
 	github.com/prometheus/procfs v0.19.2
-	github.com/spf13/cobra v1.10.1
+	github.com/spf13/cobra v1.10.2
 	golang.org/x/image v0.33.0
 	golang.org/x/sys v0.38.0
 	gorm.io/driver/mysql v1.6.0
