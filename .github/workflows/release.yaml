@@ -51,7 +51,7 @@ jobs:
         run: |
           go mod tidy
 
-      - uses: wangyoucao577/go-release-action@v1.53
+      - uses: wangyoucao577/go-release-action@v1.54
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
